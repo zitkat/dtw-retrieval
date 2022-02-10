@@ -1,0 +1,13 @@
+Key;Dtype;Default;enc_mf_apo3;enc_mf_dtwn;enc_mf_apo7;enc_mf_apo5;enc_mf_gpo
+:Group:;str;embedding;embedding;embedding;embedding;embedding;embedding
+model_name;str;transformer;transformer;transformer;transformer;transformer;transformer
+checkpoint_path;str;../ocr/checkpoints/transformer_words.model;../ocr/checkpoints/transformer_words.model;../ocr/checkpoints/transformer_words.model;../ocr/checkpoints/transformer_words.model;../ocr/checkpoints/transformer_words.model;../ocr/checkpoints/transformer_words.model
+layer;str;transformer-encoder;transformer-encoder;transformer-encoder;transformer-encoder;transformer-encoder;transformer-encoder
+feature_masking;bool;False;True;True;True;True;True
+positional_encoding;bool;False;False;False;False;False;False
+:Group:;str;pooling;pooling;pooling;pooling;pooling;pooling
+pooling_strategy;str;wh_average_pool;adaptive_pool;id_pool;adaptive_pool;adaptive_pool;wh_average_pool
+target_length;int;None;3;None;7;5;5
+poolop;str;None;average_pool;None;average_pool;average_pool;average_pool
+:Group:;str;distance;distance;distance;distance;distance;distance
+distance_name;str;euc_distance;euc_distance;dtwn_distance;euc_distance;euc_distance;euc_distance
