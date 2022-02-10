@@ -17,7 +17,9 @@ def get_activation_loader(input_folder: Path, model_name, checkpoint_path, layer
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    h5path = input_folder / f"{model_name}_{layer}_{checkpoint_path.stem}.h5"
+    checkpoint_name = checkpoint_path.stem if isinstance(checkpoint_path, Path) else checkpoint_path
+
+    h5path = input_folder / f"{model_name}_{layer}_{checkpoint_name}.h5"
 
     f = h5py.File(h5path, 'r')  # rework to close the file
 
