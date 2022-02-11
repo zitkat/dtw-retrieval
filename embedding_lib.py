@@ -11,30 +11,40 @@ import numpy as np
 import torch
 import tqdm
 
+from retrieval_lib import dtwn_distance, dtwn_distance_parallel
 
-def get_activation_loader(input_folder: Path, model_name, checkpoint_path, layer,
+
+class ActivationLoader:
+
+    def __init__(self, input_folder: Path, model_name, checkpoint_path, layer,
                           feature_masking, positional_encoding, device=None):
-    if device is None:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    checkpoint_name = checkpoint_path.stem if isinstance(checkpoint_path, Path) else checkpoint_path
+        self.device = device
 
-    h5path = input_folder / f"{model_name}_{layer}_{checkpoint_name}.h5"
+        self.feature_masking = feature_masking
 
-    f = h5py.File(h5path, 'r')  # rework to close the file
+        self.checkpoint_name = checkpoint_path.stem if isinstance(checkpoint_path, Path) else checkpoint_path
 
-    def loader(name):
-        dact: h5py.Dataset = f[name]
-        act = torch.Tensor(np.array(dact)).to(device)
+        self.h5path = input_folder / f"{model_name}_{layer}_{self.checkpoint_name}.h5"
+
+        self.f = h5py.File(self.h5path, 'r')  # rework to close the file
+
+    def load(self, name):
+        dact: h5py.Dataset = self.f[name]
+        act = np.array(dact)
+        if self.device is not None:
+            act = torch.tensor(act, device=self.device)
+
         feature_width = dact.attrs["feature_width"]
         prediction_str = dact.attrs.get("prediction_str", None)
 
-        if feature_masking:
+        if self.feature_masking:
             act = act[..., :feature_width]
 
         return prediction_str, act
 
-    return loader
+    def close(self):
+        self.f.close()
 
 
 def compute_embeddings(dataload, distance, emb, pool):
@@ -44,7 +54,7 @@ def compute_embeddings(dataload, distance, emb, pool):
     for ii, (file_name, label, freq) in tqdm.tqdm(enumerate(dataload),
                                                   total=len(dataload),
                                                   ncols=100, desc="Embedding"):
-        prediction, embedding = emb(file_name[0])
+        prediction, embedding = emb.load(file_name[0])
 
         predictions.append(prediction)
 
@@ -53,7 +63,12 @@ def compute_embeddings(dataload, distance, emb, pool):
         for bb in range(batch_embedding.shape[0]):
             embeddings.append(batch_embedding[bb, ...])
 
+    emb.close()
     distance_matrix = distance(embeddings)
+
+    # d1 = dtwn_distance(embeddings[:100])
+    # d2 = dtwn_distance_parallel(embeddings[:100])
+    # print(np.sum(d1 - d2))
     return distance_matrix, embeddings, predictions
 
 

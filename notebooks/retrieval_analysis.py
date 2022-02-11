@@ -46,11 +46,11 @@ mean_marker = {"marker":"^","markerfacecolor":"grey", "markeredgecolor":"k"}
 
 # %%
 dataset = "IAM_gt"
-model = "transformer"
-checkpoint = "IAM_words"
-layer = "enc"
+model = "resnet50"
+checkpoint = "pretrained"
+layer = "res"
 mask_features = True
-suffix = "_apo5"
+suffix = "_gpo"
 
 # %% pycharm={"name": "#%%\n"} jupyter={"outputs_hidden": false}
 experiment_id = f"{dataset}_{model}_{checkpoint}_{layer}" + ("_mf" if mask_features else "") + suffix
@@ -58,7 +58,9 @@ experiment_id
 
 # %%
 data_folder = Path("../.outputs/") / experiment_id
+print(data_folder.exists())
 data_folder.resolve()
+
 
 # %% [markdown]
 # ## Load data

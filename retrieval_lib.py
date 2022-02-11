@@ -17,11 +17,17 @@ import seaborn as sns
 from sklearn.metrics import average_precision_score
 
 from dtw import dtw
+import dask.bag as db
+from tqdm.dask import TqdmCallback
+
+import time
+import datetime
 
 from retrieval_dataset import RetrievalDataset
+from util import now
 
 
-def get_distance(distance_name: str):
+def get_distance(distance_name: str = "", **kwargs):
     return globals()[distance_name]
 
 
@@ -31,13 +37,49 @@ def euc_distance(x: List[torch.Tensor]):
     return torch.cdist(x[None, ...], x[None, ...])[0, ...]
 
 
-def dtwn_distance(x: List[torch.Tensor]):
-    xnpy = [xj.cpu().numpy().T for xj in x]
-    distance_matrix = torch.zeros(2 * (len(x),))
-    for ii, xi in tqdm.tqdm(enumerate(xnpy), total=len(x), ncols=100, desc="Distance "):
-        for jj, xj in enumerate(xnpy):
-            d = dtw(xj, xi)
+def dtwn_distance(xnpy: List[np.ndarray]):
+    xnpy = [xj.T.copy() for xj in tqdm.tqdm(xnpy, "Transfer : ", ncols=100)]
+    distance_matrix = np.zeros(2 * (len(xnpy),))
+    for ii, xi in tqdm.tqdm(enumerate(xnpy), total=len(xnpy),
+                            ncols=100, desc="Distance "):
+        for jj in range(ii, len(xnpy)):
+            d = dtw(xnpy[jj], xi)
             distance_matrix[ii, jj] = d.normalizedDistance
+            distance_matrix[jj, ii] = d.normalizedDistance
+    return distance_matrix
+
+
+def dtwn_distance_parallel(xnpy: List[np.ndarray]):
+    xnpy = [xj.T.copy() for xj in tqdm.tqdm(xnpy, "Transfer : ", ncols=100)]
+
+    distance_matrix = np.zeros(2 * (len(xnpy),))
+    seq_chunks = 5
+    seq_chunk_size = len(xnpy) // seq_chunks
+
+    def work(xi, other):
+        xis = np.empty(len(other))
+        for jj in range(len(other)):
+            xis[jj] = dtw(other[jj], xi).normalizedDistance
+        return xis
+
+    print(f"Distance : ({now()}) ")
+    tstart = time.monotonic()
+    for ii, istart in tqdm.tqdm(enumerate(range(0, len(xnpy), seq_chunk_size)),
+                                ncols=100, total=seq_chunks, desc="Distance ",
+                                disable=True):
+        for jj, jstart in enumerate(range(istart, len(xnpy), seq_chunk_size), ii):
+            dm = db.from_sequence(xnpy[istart:istart + seq_chunk_size], npartitions=96)
+            dm = dm.map(work, other=xnpy[jstart:jstart + seq_chunk_size])
+
+            with TqdmCallback(ncols=100, desc=f"{ii + 1}/{seq_chunks} {jj + 1}/{seq_chunks}"):
+                res = dm.compute(num_workers=8)
+
+            distance_matrix[istart:istart + seq_chunk_size,
+                            jstart:jstart + seq_chunk_size] = np.array(res)
+            distance_matrix[jstart:jstart + seq_chunk_size,
+                            istart:istart + seq_chunk_size] = np.array(res).T
+    tend = time.monotonic()
+    print(f"Distance :({now()}) duration {datetime.timedelta(seconds=tend - tstart)}")
 
     return distance_matrix
 
