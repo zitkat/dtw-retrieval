@@ -1,0 +1,14 @@
+Key;:Group:;model_name;checkpoint_path;layer;feature_masking;positional_encoding;:Group:;pooling_strategy;target_length;poolop;:Group:;distance_name;torch
+Dtype;str;str;str;str;bool;bool;str;str;int;str;str;str;bool
+Default;embedding;transformer;../ocr/checkpoints/transformer_words.model;transformer-encoder;False;False;pooling;wh_average_pool;None;None;distance;euc_distance;True
+enc_mf_gpo;embedding;transformer;../ocr/checkpoints/transformer_words.model;transformer-encoder;True;False;pooling;wh_average_pool;5;average_pool;distance;euc_distance;True
+enc_mf_apo3;embedding;transformer;../ocr/checkpoints/transformer_words.model;transformer-encoder;True;False;pooling;adaptive_pool;3;average_pool;distance;euc_distance;True
+enc_mf_apo5;embedding;transformer;../ocr/checkpoints/transformer_words.model;transformer-encoder;True;False;pooling;adaptive_pool;5;average_pool;distance;euc_distance;True
+enc_mf_apo7;embedding;transformer;../ocr/checkpoints/transformer_words.model;transformer-encoder;True;False;pooling;adaptive_pool;7;average_pool;distance;euc_distance;True
+enc_mf_dtwnp;embedding;transformer;../ocr/checkpoints/transformer_words.model;transformer-encoder;True;False;pooling;id_pool;None;None;distance;dtwn_distance_parallel;False
+dec_mf_gpo;embedding;transformer;../ocr/checkpoints/transformer_words.model;transformer-decoder;True;False;pooling;wh_average_pool;3;average_pool;distance;euc_distance;True
+dec_mf_apo3;embedding;transformer;../ocr/checkpoints/transformer_words.model;transformer-decoder;True;False;pooling;adaptive_pool;3;average_pool;distance;euc_distance;True
+dec_mf_apo5;embedding;transformer;../ocr/checkpoints/transformer_words.model;transformer-decoder;True;False;pooling;adaptive_pool;5;average_pool;distance;euc_distance;True
+dec_mf_apo7;embedding;transformer;../ocr/checkpoints/transformer_words.model;transformer-decoder;True;False;pooling;adaptive_pool;7;average_pool;distance;euc_distance;True
+dec_mf_dtwnp;embedding;transformer;../ocr/checkpoints/transformer_words.model;transformer-decoder;True;False;pooling;id_pool;None;None;distance;dtwn_distance_parallel;False
+res_mf_gpo;embedding;resnet50;pretrained;global_pool-pool;True;False;pooling;id_pool;5;average_pool;distance;euc_distance;True

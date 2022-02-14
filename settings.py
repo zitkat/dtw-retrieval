@@ -37,6 +37,10 @@ def load_settings(set_path: Path = Path("rendering_settings.csv"),
     else:
         raise NotImplemented("Only csv or ods files supported.")
 
+    if set_path.stem[-1] == "T":
+        settings_df = settings_df.T
+        settings_df.index = [l.split(".")[0] if group_sep in l else l for l in settings_df.index]
+
     splits = list(np.where(settings_df.index == group_sep)[0])
     if len(splits) == 0 or splits[0] != 0:
         splits = [0] + splits
