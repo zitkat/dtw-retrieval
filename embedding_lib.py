@@ -23,7 +23,7 @@ class ActivationLoader:
 
         self.feature_masking = feature_masking
 
-        self.checkpoint_name = checkpoint_path.stem if isinstance(checkpoint_path, Path) else checkpoint_path
+        self.checkpoint_name = Path(checkpoint_path).stem
 
         self.h5path = input_folder / f"{model_name}_{layer}_{self.checkpoint_name}.h5"
 
