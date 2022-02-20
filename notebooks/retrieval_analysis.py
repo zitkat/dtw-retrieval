@@ -73,9 +73,10 @@ data_len = len(aps_df)
 # %%
 distance_matrix = np.load(data_folder / f"{experiment_id}_dist.npy")
 
-scores = -distance_matrix[~np.eye(distance_matrix.shape[0],dtype=bool)].reshape(distance_matrix.shape[0],-1)
+scores = - distance_matrix[~np.eye(distance_matrix.shape[0],dtype=bool)].reshape(distance_matrix.shape[0],-1)
 hits = np.load(data_folder / f"{experiment_id}_hits.npy")
 answers = np.load(data_folder / f"{experiment_id}_ans.npy")
+base_len = answers.shape[1]  # size of the "database" containing all data
 
 # %%
 aps_df.head()
@@ -83,25 +84,25 @@ aps_df.head()
 # %% [markdown]
 # ## Average Precision
 
-# %%
+# %% tags=[]
 aps_df["ap"].describe()
 
 # %%
-sns.boxplot(x = aps_df["ap"], showmeans=True, meanprops=mean_marker)
+sns.violinplot(x = aps_df["ap"], showmeans=True, meanprops=mean_marker)
 
 # %% [markdown]
 # ### Precision-recall curve
 
-# %%
+# %% jupyter={"outputs_hidden": true}
 scores.shape
 
-# %%
+# %% jupyter={"outputs_hidden": true}
 hits.shape
 
 # %%
 scores_reduced = scores[:hits.shape[0]]
 
-# %% tags=[]
+# %% tags=[] jupyter={"outputs_hidden": true, "source_hidden": true}
 from sklearn.metrics import PrecisionRecallDisplay
 
 from sklearn.metrics import precision_recall_curve
@@ -109,7 +110,7 @@ from sklearn.metrics import average_precision_score
 
 p, r, _ = precision_recall_curve(hits.T.ravel(), scores_reduced.T.ravel())
 
-# %% tags=[]
+# %% tags=[] jupyter={"source_hidden": true}
 display = PrecisionRecallDisplay(
     recall=r,
     precision=p,)
@@ -142,12 +143,6 @@ cutoff = min(100, len(aps_df) - 1)
 
 # %% [markdown]
 # ### Load data
-
-# %%
-answers = np.load(data_folder / f"{experiment_id}_ans.npy")
-hits = np.load(data_folder / f"{experiment_id}_hits.npy")
-
-base_len = answers.shape[1]  # size of the "database" containing all data
 
 # %%
 max_possible_freqs = np.minimum(np.array(aps_df["freq"] - 1)[..., None], np.arange(1, base_len + 1)[None, ...])
