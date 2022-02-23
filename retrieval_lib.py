@@ -17,6 +17,8 @@ import seaborn as sns
 from sklearn.metrics import average_precision_score
 
 from dtw import dtw
+from Levenshtein import distance as levenshtein_distance
+
 import dask.bag as db
 from tqdm.dask import TqdmCallback
 
@@ -53,7 +55,7 @@ def dtwn_distance_parallel(xnpy: List[np.ndarray]):
     xnpy = [xj.T.copy() for xj in tqdm.tqdm(xnpy, "Transfer : ", ncols=100)]
 
     distance_matrix = np.zeros(2 * (len(xnpy),))
-    seq_chunks = 5
+    seq_chunks = 10
     seq_chunk_size = len(xnpy) // seq_chunks
 
     def work(xi, other):
@@ -62,6 +64,10 @@ def dtwn_distance_parallel(xnpy: List[np.ndarray]):
             xis[jj] = dtw(other[jj], xi).normalizedDistance
         return xis
 
+    from dask.distributed import Client
+    # Use all 8 cores
+    # client = Client()
+    # print(client.dashboard_link)
     print(f"Distance : ({now()}) ")
     tstart = time.monotonic()
     for ii, istart in tqdm.tqdm(enumerate(range(0, len(xnpy), seq_chunk_size)),
@@ -72,12 +78,50 @@ def dtwn_distance_parallel(xnpy: List[np.ndarray]):
             dm = dm.map(work, other=xnpy[jstart:jstart + seq_chunk_size])
 
             with TqdmCallback(ncols=100, desc=f"{ii + 1}/{seq_chunks} {jj + 1}/{seq_chunks}"):
-                res = dm.compute(num_workers=8)
+                res = dm.compute(num_workers=4)
 
             distance_matrix[istart:istart + seq_chunk_size,
                             jstart:jstart + seq_chunk_size] = np.array(res)
             distance_matrix[jstart:jstart + seq_chunk_size,
                             istart:istart + seq_chunk_size] = np.array(res).T
+    tend = time.monotonic()
+    print(f"Distance :({now()}) duration {datetime.timedelta(seconds=tend - tstart)}")
+
+    return distance_matrix
+
+
+def levenshtein_distance_parallel(xnpy: List[str]):
+
+    distance_matrix = np.zeros(2 * (len(xnpy),))
+    seq_chunks = 5
+    seq_chunk_size = len(xnpy) // seq_chunks
+
+    def work(xi, other):
+        n = len(xi)
+        xis = np.empty(len(other))
+        for jj in range(len(other)):
+            xis[jj] = levenshtein_distance(other[jj], xi) / n
+        return xis
+
+    from dask.distributed import Client
+    client = Client()
+    print(client.dashboard_link)
+    print(f"Distance : ({now()}) ")
+    tstart = time.monotonic()
+    for ii, istart in tqdm.tqdm(enumerate(range(0, len(xnpy), seq_chunk_size)),
+                                ncols=100, total=seq_chunks, desc="Distance ",
+                                disable=True):
+        for jj, jstart in enumerate(range(istart, len(xnpy), seq_chunk_size), ii):
+            dm = db.from_sequence(xnpy[istart:istart + seq_chunk_size], npartitions=16)
+            dm = dm.map(work, other=xnpy[jstart:jstart + seq_chunk_size])
+
+            with TqdmCallback(ncols=100, desc=f"{ii + 1}/{seq_chunks} {jj + 1}/{seq_chunks}"):
+                res = dm.compute(num_workers=4)
+
+            distance_matrix[istart:istart + seq_chunk_size,
+            jstart:jstart + seq_chunk_size] = np.array(res)
+            distance_matrix[jstart:jstart + seq_chunk_size,
+            istart:istart + seq_chunk_size] = np.array(res).T
     tend = time.monotonic()
     print(f"Distance :({now()}) duration {datetime.timedelta(seconds=tend - tstart)}")
 
@@ -94,10 +138,12 @@ def test_retrieval(dataset: RetrievalDataset, retriever):
             continue
 
         ans = retriever(ii)
-        if ans[0] != ii:
-            print(f"Bad first index {ans[0]} for item {ii}: {file_name} {label}")
+        # if ans[0] != ii:
+        #     print(f"Bad first index {ans[0]} for item {ii}: {file_name} {label}")
 
-        ans = ans[1:]  # skip the query which should be returned first
+        ans = ans[ans != ii]
+        # ans = ans[1:]  # skip the query which should be returned first
+
 
         scores = np.arange(len(ans))[::-1]
         trues = np.array((dataset.all_samples.label == label)[ans])

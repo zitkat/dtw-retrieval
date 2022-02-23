@@ -12,6 +12,7 @@ import torch
 import tqdm
 
 from retrieval_lib import dtwn_distance, dtwn_distance_parallel
+from retrieval_lib import plot_normalized_heatmap
 
 
 class ActivationLoader:
@@ -64,7 +65,11 @@ def compute_embeddings(dataload, distance, emb, pool):
             embeddings.append(batch_embedding[bb, ...])
 
     emb.close()
-    distance_matrix = distance(embeddings)
+    if "levenshtein" in distance.__name__:
+        distance_matrix = distance(predictions)
+        # plot_normalized_heatmap(distance_matrix)
+    else:
+        distance_matrix = distance(embeddings)
 
     # d1 = dtwn_distance(embeddings[:100])
     # d2 = dtwn_distance_parallel(embeddings[:100])
