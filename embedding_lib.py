@@ -51,6 +51,7 @@ class ActivationLoader:
 def compute_embeddings(dataload, distance, emb, pool):
     embeddings = []
     predictions = []
+    labels = []
 
     for ii, (file_name, label, freq) in tqdm.tqdm(enumerate(dataload),
                                                   total=len(dataload),
@@ -59,13 +60,17 @@ def compute_embeddings(dataload, distance, emb, pool):
 
         predictions.append(prediction)
 
+        labels.append(label[0])
+
         batch_embedding = pool(embedding)
 
         for bb in range(batch_embedding.shape[0]):
             embeddings.append(batch_embedding[bb, ...])
 
     emb.close()
-    if "levenshtein" in distance.__name__:
+    if "levenshtein_gt" in distance.__name__:
+        distance_matrix = distance(labels, predictions)
+    elif "levenshtein" in distance.__name__:
         distance_matrix = distance(predictions)
         # plot_normalized_heatmap(distance_matrix)
     else:

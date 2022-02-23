@@ -51,6 +51,16 @@ def dtwn_distance(xnpy: List[np.ndarray]):
     return distance_matrix
 
 
+def levenshtein_gt_distance(queries, database):
+    distance_matrix = np.zeros((len(queries), len(database)))
+    for ii, xi in tqdm.tqdm(enumerate(queries), total=len(queries),
+                            ncols=100, desc="Distance "):
+        for jj in range(len(database)):
+            d = levenshtein_distance(xi, database[jj])
+            distance_matrix[ii, jj] = d
+    return distance_matrix
+
+
 def dtwn_distance_parallel(xnpy: List[np.ndarray]):
     xnpy = [xj.T.copy() for xj in tqdm.tqdm(xnpy, "Transfer : ", ncols=100)]
 
@@ -128,7 +138,41 @@ def levenshtein_distance_parallel(xnpy: List[str]):
     return distance_matrix
 
 
-def test_retrieval(dataset: RetrievalDataset, retriever):
+def levenshtein_gt_distance_parallel(queries, database: List[str]):
+
+    distance_matrix = np.zeros((len(queries), len(database),))
+    seq_chunks = 5
+    seq_chunk_size = len(database) // seq_chunks
+
+    def work(xi, other):
+        n = len(xi)
+        xis = np.empty(len(other))
+        for jj in range(len(other)):
+            xis[jj] = levenshtein_distance(other[jj], xi) / n
+        return xis
+
+    from dask.distributed import Client
+    client = Client()
+    print(client.dashboard_link)
+    print(f"Distance : ({now()}) ")
+    tstart = time.monotonic()
+    for ii, istart in enumerate(range(0, len(queries), seq_chunk_size)):
+        for jj, jstart in enumerate(range(0, len(database), seq_chunk_size)):
+            dm = db.from_sequence(queries[istart:istart + seq_chunk_size], npartitions=16)
+            dm = dm.map(work, other=database[jstart:jstart + seq_chunk_size])
+
+            with TqdmCallback(ncols=100, desc=f"{ii + 1}/{seq_chunks} {jj + 1}/{seq_chunks}"):
+                res = dm.compute(num_workers=4)
+
+            distance_matrix[istart:istart + seq_chunk_size, jstart:jstart + seq_chunk_size] = np.array(res)
+            # distance_matrix[jstart:jstart + seq_chunk_size, istart:istart + seq_chunk_size] = np.array(res).T
+    tend = time.monotonic()
+    print(f"Distance :({now()}) duration {datetime.timedelta(seconds=tend - tstart)}")
+
+    return distance_matrix
+
+
+def test_retrieval(dataset: RetrievalDataset, retriever, omit_query=False):
     average_precisions = []
     answers = []
     hits = []
@@ -138,12 +182,12 @@ def test_retrieval(dataset: RetrievalDataset, retriever):
             continue
 
         ans = retriever(ii)
-        # if ans[0] != ii:
-        #     print(f"Bad first index {ans[0]} for item {ii}: {file_name} {label}")
+        if omit_query:
+            if ans[0] != ii:
+                print(f"Bad first index {ans[0]} for item {ii}: {file_name} {label}")
 
-        ans = ans[ans != ii]
+            ans = ans[ans != ii]
         # ans = ans[1:]  # skip the query which should be returned first
-
 
         scores = np.arange(len(ans))[::-1]
         trues = np.array((dataset.all_samples.label == label)[ans])

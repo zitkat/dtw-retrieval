@@ -87,7 +87,8 @@ def main(input_file: Path,
 
     retriever = get_precise_retriever(distance_matrix)
 
-    ap_df, answers, hits = test_retrieval(dataset, retriever)
+    ap_df, answers, hits = test_retrieval(dataset, retriever,
+                                          omit_query="gt" not in settings["distance"]["distance_name"])
 
     # %% Outputs
     ap_df["predictions"] = np.array(predictions)[ap_df.index]

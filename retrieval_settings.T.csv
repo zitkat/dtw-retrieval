@@ -9,6 +9,7 @@ s2s_enc_apo5;embedding;seq2seq;seq2seq-IAM_words-10.model;encoder;False;False;po
 s2s_enc_apo7;embedding;seq2seq;seq2seq-IAM_words-10.model;encoder;False;False;pooling;adaptive_pool;7;average_pool;distance;euc_distance;True
 s2s_enc_dtwnp;embedding;seq2seq;seq2seq-IAM_words-10.model;encoder;False;False;pooling;id_pool;5;average_pool;distance;dtwn_distance_parallel;False
 s2s_enc_lev;embedding;seq2seq;seq2seq-IAM_words-10.model;encoder;False;False;pooling;id_pool;5;average_pool;distance;levenshtein_distance_parallel;False
+s2s_enc_lev_gt;embedding;seq2seq;seq2seq-IAM_words-10.model;encoder;False;False;pooling;id_pool;5;average_pool;distance;levenshtein_gt_distance_parallel;False
 enc_mf_gpo;embedding;transformer;IAM_words.model;transformer-encoder;True;False;pooling;wh_average_pool;5;average_pool;distance;euc_distance;True
 enc_mf_apo3;embedding;transformer;IAM_words.model;transformer-encoder;True;False;pooling;adaptive_pool;3;average_pool;distance;euc_distance;True
 enc_mf_apo5;embedding;transformer;IAM_words.model;transformer-encoder;True;False;pooling;adaptive_pool;5;average_pool;distance;euc_distance;True
@@ -20,3 +21,4 @@ dec_apo5;embedding;transformer;IAM_words.model;transformer-decoder;False;False;p
 dec_apo7;embedding;transformer;IAM_words.model;transformer-decoder;False;False;pooling;adaptive_pool;7;average_pool;distance;euc_distance;True
 dec_dtwnp;embedding;transformer;IAM_words.model;transformer-decoder;False;False;pooling;id_pool;None;None;distance;dtwn_distance_parallel;False
 dec_lev;embedding;transformer;IAM_words.model;transformer-decoder;False;False;pooling;id_pool;None;None;distance;levenshtein_distance_parallel;False
+dec_lev_gt;embedding;transformer;IAM_words.model;transformer-decoder;False;False;pooling;id_pool;None;None;distance;levenshtein_gt_distance;False
